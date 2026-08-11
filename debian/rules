@@ -1,0 +1,67 @@
+#!/usr/bin/make -f
+DEB_HOST_ARCH ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
+FISH_VERSION := $(shell dpkg-parsechangelog -S Version | sed 's/[-~].*//')
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+
+# The binary comes from the upstream release asset (a single statically linked
+# executable). The man pages are not shipped prebuilt anywhere, so build them
+# from doc_src/ — which is right here, since the orig tarball is fish's own
+# source release.
+override_dh_auto_build:
+	@arch="$(DEB_HOST_ARCH)"; \
+	case "$$arch" in \
+		amd64) TARGET="x86_64" ;; \
+		arm64) TARGET="aarch64" ;; \
+		*) echo "Unsupported architecture: $$arch"; exit 1 ;; \
+	esac; \
+	ASSET="fish-$(FISH_VERSION)-linux-$$TARGET.tar.xz"; \
+	echo "Downloading $$ASSET..."; \
+	wget -q "https://github.com/fish-shell/fish-shell/releases/download/$(FISH_VERSION)/$$ASSET"; \
+	rm -rf fish-dist; \
+	mkdir -p fish-dist; \
+	tar -xf "$$ASSET" -C fish-dist; \
+	rm -f "$$ASSET"; \
+	chmod 755 fish-dist/fish
+	sphinx-build -j auto -q -b man doc_src fish-dist/man
+
+override_dh_auto_install:
+	install -D -m 755 fish-dist/fish debian/fish/usr/bin/fish
+	# fish dispatches on argv[0]: the same executable is fish_indent and
+	# fish_key_reader, so symlink rather than ship three 15 MB copies.
+	ln -sf fish debian/fish/usr/bin/fish_indent
+	ln -sf fish debian/fish/usr/bin/fish_key_reader
+	# sphinx emits a page per builtin, and fish's builtins include echo, test,
+	# kill, printf, true, false... which collide with coreutils and friends in
+	# /usr/share/man. Debian solves this by keeping the builtin pages in a
+	# private fish man dir; only the fish* pages are system-wide. Do the same.
+	# System-wide: the three executables plus the fish-* prose docs. Everything
+	# else (builtins and fish_* functions) stays in fish's private man dir,
+	# matching how Debian's fish-common splits them.
+	mkdir -p debian/fish/usr/share/man/man1 debian/fish/usr/share/fish/man/man1
+	for m in fish-dist/man/*.1; do \
+		case "$$(basename $$m)" in \
+			fish.1|fish_indent.1|fish_key_reader.1|fish-*.1) \
+				install -m 644 "$$m" debian/fish/usr/share/man/man1/ ;; \
+			*) install -m 644 "$$m" debian/fish/usr/share/fish/man/man1/ ;; \
+		esac; \
+	done
+	install -D -m 644 debian/manpath.fish \
+		debian/fish/usr/share/fish/vendor_conf.d/00-griffo-fish-manpath.fish
+
+override_dh_installchangelogs:
+	dh_installchangelogs CHANGELOG.rst
+
+override_dh_auto_test:
+	fish-dist/fish --version
+	fish-dist/fish -c 'echo smoke test ok'
+
+override_dh_auto_clean:
+	rm -rf fish-dist || true
+
+override_dh_strip:
+
+override_dh_shlibdeps:

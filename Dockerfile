@@ -1,0 +1,91 @@
+ARG DEBIAN_DIST=bookworm
+
+# fish ships no prebuilt man pages, in either the binary or the source tarball,
+# so generate them from doc_src/ with sphinx. Inputs are identical for every
+# dist/arch, so Docker caches this stage across the whole matrix.
+FROM debian:bookworm AS docs
+ARG fish_VERSION
+RUN apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        python3-sphinx xz-utils \
+ && rm -rf /var/lib/apt/lists/*
+COPY fish-${fish_VERSION}.tar.xz /tmp/src.tar.xz
+RUN mkdir -p /tmp/src /doc-extra.d \
+ && tar -xJf /tmp/src.tar.xz -C /tmp/src --strip-components=1 \
+ && sphinx-build -j auto -q -b man /tmp/src/doc_src /man \
+ && cp /tmp/src/README.rst /tmp/src/CHANGELOG.rst /doc-extra.d/
+
+FROM debian:bookworm
+
+ARG DEBIAN_DIST
+ARG fish_VERSION
+ARG BUILD_VERSION
+ARG FULL_VERSION
+ARG ARCH
+ARG FISH_RELEASE
+ARG BUILD_DATE
+
+RUN mkdir -p /output/usr/bin \
+             /output/usr/share/doc/fish \
+             /output/usr/share/man/man1 \
+             /output/usr/share/fish/man/man1 \
+             /output/usr/share/fish/vendor_conf.d \
+             /output/DEBIAN
+
+# Binary. fish dispatches on argv[0], so fish_indent and fish_key_reader are
+# symlinks to the same executable rather than two more 15 MB copies.
+COPY ${FISH_RELEASE}/fish /output/usr/bin/fish
+RUN chmod 755 /output/usr/bin/fish \
+ && ln -sf fish /output/usr/bin/fish_indent \
+ && ln -sf fish /output/usr/bin/fish_key_reader
+
+# Man pages (gzip -n for reproducible output).
+# sphinx emits a page per builtin, and fish's builtins include echo, test,
+# kill, printf, true and false — those pages would collide with coreutils in
+# /usr/share/man. Debian keeps the builtin pages in a private fish man dir and
+# ships only the fish* ones system-wide; do the same.
+COPY --from=docs /man/ /tmp/man/
+COPY debian/manpath.fish /output/usr/share/fish/vendor_conf.d/00-griffo-fish-manpath.fish
+RUN for m in /tmp/man/*.1; do \
+        base="$(basename "$m")"; \
+        case "$base" in \
+            fish.1|fish_indent.1|fish_key_reader.1|fish-*.1) \
+                dest=/output/usr/share/man/man1 ;; \
+            *)  dest=/output/usr/share/fish/man/man1 ;; \
+        esac; \
+        gzip -9 -n -c "$m" > "$dest/$base.gz"; \
+    done \
+ && chmod 644 /output/usr/share/man/man1/*.gz \
+              /output/usr/share/fish/man/man1/*.gz \
+              /output/usr/share/fish/vendor_conf.d/00-griffo-fish-manpath.fish \
+ && rm -rf /tmp/man
+
+# Docs: copyright plus the upstream README, and the upstream changelog
+COPY output/copyright /output/usr/share/doc/fish/copyright
+COPY --from=docs /doc-extra.d/README.rst /output/usr/share/doc/fish/README.rst
+RUN chmod 644 /output/usr/share/doc/fish/copyright /output/usr/share/doc/fish/README.rst
+COPY --from=docs /doc-extra.d/CHANGELOG.rst /tmp/changelog.upstream
+RUN gzip -9 -n -c /tmp/changelog.upstream > /output/usr/share/doc/fish/changelog.gz \
+ && chmod 644 /output/usr/share/doc/fish/changelog.gz \
+ && rm -f /tmp/changelog.upstream
+
+# Debian changelog (substitute placeholders, then gzip)
+COPY output/changelog.Debian /tmp/changelog.Debian
+RUN sed -i "s/FULL_VERSION/$FULL_VERSION/" /tmp/changelog.Debian \
+ && sed -i "s/DIST/$DEBIAN_DIST/" /tmp/changelog.Debian \
+ && sed -i "s|DATE|$BUILD_DATE|" /tmp/changelog.Debian \
+ && gzip -9 -n -c /tmp/changelog.Debian > /output/usr/share/doc/fish/changelog.Debian.gz \
+ && chmod 644 /output/usr/share/doc/fish/changelog.Debian.gz \
+ && rm -f /tmp/changelog.Debian
+
+# Control + maintainer scripts
+COPY output/DEBIAN/control /output/DEBIAN/control
+COPY output/DEBIAN/postinst /output/DEBIAN/postinst
+COPY output/DEBIAN/postrm /output/DEBIAN/postrm
+RUN chmod 755 /output/DEBIAN/postinst /output/DEBIAN/postrm
+RUN sed -i "s/fish_VERSION/$fish_VERSION/" /output/DEBIAN/control \
+ && sed -i "s/BUILD_VERSION/$BUILD_VERSION/" /output/DEBIAN/control \
+ && sed -i "s/DIST/$DEBIAN_DIST/" /output/DEBIAN/control \
+ && sed -i "s/SUPPORTED_ARCHITECTURES/$ARCH/" /output/DEBIAN/control
+
+RUN dpkg-deb --build /output /fish_${FULL_VERSION}.deb

@@ -1,0 +1,20 @@
+Section: shells
+Priority: optional
+Maintainer: Dario Griffo <dariogriffo@gmail.com>
+Homepage: https://fishshell.com/
+Package: fish
+Version: fish_VERSION-BUILD_VERSION~DIST
+Architecture: SUPPORTED_ARCHITECTURES
+Suggests: xsel, python3, man-db
+Description: friendly interactive shell
+ fish is a smart and user-friendly command line shell for macOS, Linux and the
+ rest of the family. It has autosuggestions from history and completions,
+ syntax highlighting as you type, tab completions generated from man pages, and
+ sane scripting with no arcane quoting rules — all working out of the box with
+ no configuration.
+ .
+ This package repackages the statically linked musl binary published upstream.
+ Since fish 4.0 the functions and completions that used to live in
+ /usr/share/fish are embedded in the executable, so unlike the Debian archive
+ build this package needs neither a fish-common data package nor any shared
+ library at runtime.

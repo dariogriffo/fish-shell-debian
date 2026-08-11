@@ -1,0 +1,14 @@
+#!/bin/sh
+set -e
+
+# Deregister the login shell only when fish is actually going away. Doing it
+# unconditionally would also fire during an upgrade, and a failure between the
+# old postrm and the new postinst would leave /usr/bin/fish out of /etc/shells
+# while fish is still installed — locking out anyone using it as their shell.
+case "$1" in
+    remove|purge)
+        remove-shell /usr/bin/fish
+        ;;
+esac
+
+exit 0

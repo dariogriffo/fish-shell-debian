@@ -1,0 +1,5 @@
+fish (FULL_VERSION) DIST; urgency=low
+
+  * Repackage upstream fish release as a Debian binary package.
+
+ -- Dario Griffo <dariogriffo@gmail.com>  DATE

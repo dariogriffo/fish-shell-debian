@@ -1,0 +1,20 @@
+# Upstream release assets extracted during builds
+fish-amd64/
+fish-arm64/
+fish-*.tar.xz
+
+# Source package artifacts
+fish_*.orig.tar.xz
+fish_*.debian.tar.xz
+fish_*.dsc
+
+# Contents unpacked from built .deb files
+control.tar.*
+data.tar.*
+debian-binary
+
+# .deb Packages
+*.deb
+
+.idea/*
+.DS_Store

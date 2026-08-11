@@ -1,0 +1,12 @@
+#!/bin/sh
+set -e
+
+# Register fish as a valid login shell. add-shell is idempotent and ships in
+# debianutils, which is Essential, so this needs no dependency.
+if [ "$1" = "configure" ]; then
+    add-shell /usr/bin/fish
+fi
+
+#DEBHELPER#
+
+exit 0

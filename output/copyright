@@ -1,0 +1,64 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: fish
+Upstream-Contact: https://github.com/fish-shell/fish-shell/issues
+Source: https://github.com/fish-shell/fish-shell
+
+Files: *
+Copyright: 2005-2009 Axel Liljencrantz
+           2009- fish-shell contributors
+License: GPL-2
+
+Files: debian/*
+Copyright: 2026 Dario Griffo <dariogriffo@gmail.com>
+License: GPL-2
+
+Comment: fish bundles a small amount of code under other licences, as recorded
+ in the upstream doc_src/license.rst: GNU printf from coreutils (GPL-2), the
+ Python documentation theme (PSF-2), Alpine.js, FindRust.cmake and the Dracula
+ and Nord themes (Expat), and code derived from the GNU C Library (LGPL-2).
+ Those components are either build-time only or embedded in the binary this
+ package ships.
+
+License: GPL-2
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; version 2 of the License.
+ .
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ On Debian systems, the complete text of the GNU General Public License
+ version 2 can be found in '/usr/share/common-licenses/GPL-2'.
+
+License: LGPL-2
+ This library is free software; you can redistribute it and/or modify it
+ under the terms of the GNU Library General Public License as published by
+ the Free Software Foundation; version 2 of the License.
+ .
+ On Debian systems, the complete text of the GNU Library General Public
+ License version 2 can be found in '/usr/share/common-licenses/LGPL-2'.
+
+License: Expat
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ .
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ THE SOFTWARE.
+
+License: PSF-2
+ Python Software Foundation License Version 2. On Debian systems, the complete
+ text can be found in '/usr/share/common-licenses/PSF-2'.
